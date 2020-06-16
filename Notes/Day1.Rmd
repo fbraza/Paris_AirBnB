@@ -1,0 +1,621 @@
+---
+title: "R4BD - Day 1"
+author: "Pr. Charles BOUVEYRON"
+date: "4/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+R is a free software which is important when you want to develop some code. R is also probably the best way to have access to the most recent reasearch in Statistics and Data Science. This is due to tha fact that most reserachers are working with R and release packages for the software.
+
+If you are able to master both R and Python, you will be able to use all techniques of Data Science and AI. R and Python are totally complementary! As a Data Scientist / enginneer, you have to master both languages! It is also important to know that it is possible to call Python from R, and R from Python.
+
+R is probably more specific in term of methods for Statistics, statistical learning and Machine learning. And Python is, for the moment, very advanced in term of Deep Learning techniques.
+
+A good point for R is also the fact that it is available for all OS, meaning that a code devleoped on Mac will be able to run on Windows and Linux without problems. R also allows to run very old codes (more than 10 years ago) by ensuring the back-compatibility of all functions.
+
+The most attrative elements of R for a Data Scientist:
+- there is a large community developing the most advenced techniques in AI,
+- some private companies are also supporting the software and its devlopement (Rstudio and Microsoft for instance).
+
+To install R and Rstudio:
+- download R from the R server (CRAN): https://cran.r-projet.org
+- download R studio (desktop): https://www.rstudio.com
+
+# How to work with R - R 101
+
+The basic way of working with R is to:
+- write your code in the `Script` panel,
+- the `Console` panel will execute it,
+- the results will be visible in the `Environnment` and `Plot` panels
+
+It is important to remind that only the script can be saved on the disk and not the elements of the console!
+
+The console should be used only to test some commands before to use them in a script.
+
+## The R basics
+
+First, it is possible to use R to make simple calculations:
+
+```{r}
+2 + 2
+```
+
+The `[1]` before the answer indicates that R works everytime with vectors or matrices.
+
+A simple way to understand the addition of vectors in R is as following:
+
+```{r}
+c(2, 2, 3, 5, 5) + c(1, 2, 3, 4, 5)
+```
+
+The `[1]` is here to indicate that the first element of this row is 3.
+
+```{r}
+rnorm(50) + rnorm(50)
+```
+
+```{r}
+c(1, 2, 3) + c(1, 2)
+```
+
+Here, we see that it is not possible to add two vectors with different sizes.
+
+In R, it is possible to have access to a lot of mathematical or logic functions:
+
+```{r}
+exp(2)
+log(1.56)
+sin(3.14)
+```
+
+It is also possible to save the results of the calculations in variables. The operator to save into a variable is `=` (or `->`):
+
+```{r}
+x <- exp(2)
+```
+
+In R, no message means everything went well! If you want to see the value inside `x`, you just have to write:
+
+```{r}
+x
+```
+
+```{r}
+x <- exp(2)
+x
+```
+
+One situation where the `<-` is useful:
+
+```{r}
+y <- 2 -> x
+x
+y
+```
+
+The following situation is a situation where the `<-` operator is more useful: some times, it may be useful to monitor the computing time of some action:
+
+```{r}
+time <- system.time(w <- exp(2))
+time
+w
+```
+
+##Vectors and matrices (and other funny stuff)
+
+Most of the data that we manipulate can be stored within vectors. In fact, you already know how to create vectors: the `c()` function allows to create vectors from the console or the script.
+
+```{r}
+x <- c(1, 2, 3, 56, -78.789657657)
+x
+```
+
+But, there a lot of other functions that create vectors:
+
+```{r}
+x <- seq(1, 100)
+x
+```
+
+```{r}
+x <- seq(1, 100, by = 5)
+x
+```
+
+```{r}
+x <- 1:10
+x
+```
+
+The `:` operator is equivalent to `seq()` without any specific options.
+
+```{r}
+x <- rep(1, 10)
+x
+```
+
+```{r}
+x <- rep(c(1, 2, 3), c(1, 2, 3))
+x
+```
+
+To summarize, we can create vectors with the functions `c`, `seq`, `rep` and the `:` operator.
+
+It is alwso important to know that we can have vectors of integers, doubles, booleans, strings, but not a mix of this types!
+
+```{r}
+x <- c(1, 2, 3, 4, 5)
+y <- c(-1.2, pi, sin(3))
+z <- c("a", "b", "cdefg")
+u <- c(TRUE, FALSE, TRUE, FALSE)
+```
+
+> Warning: avoid using TRUE and FALSE for variable names!!!
+
+For matrices, we have the `matrix` function which aims to create matrices:
+
+```{r}
+A <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3)
+A
+
+A <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3, byrow = TRUE)
+A
+```
+
+In fact, we usually prefer to use the `cbind` and `rbind` functions to fill a matrix:
+```{r}
+A <- cbind(
+    c(1, 2, 3),
+    c(4, 5, 6)
+)
+A
+
+B <- rbind(
+    c(1, 2, 3),
+    c(4, 5, 6)
+)
+B
+```
+
+> Warning: as for vectors, it is not possible to mix different types in a matrix!
+
+The data frame is the impletation in R of the notion of a data table: one row will correspond to an individual, one column will correspond to a variable. The `data.frame` structure is designed to store such data.
+
+```{r}
+X <- data.frame(x = c(1, 2, -3, 5, pi), y = c(1, 2, 0, -1, 6), z = c("m", "f", "m", "f", "f"))
+X
+```
+
+Conversly to a matrix, a data frame can mix variables with different types! However, it is still not possible to mix different types in one varaible of the data frame. All variables shoudl also be of the same size.
+
+> Remark: most of the time, we will work with data frames instead of vectors or matrices.
+
+The last important structure in R is the `list`. A list will allow to store elements of different types and of different sizes. The idea is to store in one single objects a variety of information about this object.
+
+```{r}
+charles <- list(name = "Bouveyron", age = 22, nb_of_cats = 299, grades = c(100, 100, 100))
+charles
+```
+
+> Remark: lists are used very frequently in R because all functions return the results under the form of a list!
+
+```{r}
+out <- t.test(x = 1:10, y = 2:11)
+out$statistic
+```
+
+In order to manipulate vectors, matrices, data frames and lists, we will use the `[ ]` and `$` operators:
+
+- To manipulate a vector or a matrix, we use the `[ ]`:
+
+```{r}
+x <- 1:10
+x[2]
+```
+
+> Warning: in R, the indexing of vectors and matrices starts at 1 (and not 0 like in Python)!!!
+
+```{r}
+x[2] <- -1
+x
+```
+
+```{r}
+x[2] <- NA
+x
+```
+
+The `NA` keyword is reserved for missing values.
+
+```{r}
+is.na(x)
+```
+
+```{r}
+A <- diag(4)
+A
+
+A[2, 1] # The value in the 2nd row, 1st col
+
+A[4, 4] # The value in the 4st row, 4st col
+```
+
+It is also possible to access and modify more that one element at a time:
+
+```{r}
+x
+x[1:3] <- 0
+x
+```
+
+```{r}
+A <- diag(4)
+A
+
+A[1, 1:3] <- 100
+A
+
+A[c(1, 3), c(2, 4)] <- NA
+A
+```
+
+> Exercise: create two vectors, a and b, with values between 1 and 10, and replace the five first values of a with the last 5 values of b.
+
+```{r}
+a <- 1:10
+b <- 10:1
+a
+b
+
+a[1:5] <- b[6:10]
+a
+b
+```
+
+It is also very useful to be able to do conditional access to the data. A conditional access is the action of accessing or manipulating an object conditionnaly to another object.
+
+```{r}
+x <- 1:10
+y <- rep(c("m", "f"), c(5, 5))
+x
+y
+
+x[y == "f"]
+
+x[y == "m"] <- 0
+x
+
+x[x < 5] <- 5
+x
+```
+
+> Remark: the conditional operators are `==` for testing the equality, `<` (`<=`) for smaller than and `>` (`>=`) for larger than.
+
+> Warning: be careful to use `==` for testing and not `=`! In the latter case, you will an assignement and therefore modify your data.
+
+```{r}
+A <- diag(4)
+A[A < 1] <- 2
+
+A
+```
+
+A last command wich is useful for matrices is the ` ` (empty) operator: this operator allows to select all alements of a row, or a column.
+
+```{r}
+A <- diag(4)
+A
+
+A[2:3, ] # This selects all columns for rows 2 and 3
+```
+
+> Exercise: create a matrix A of size 4x4, a matrix B of size 3x3 with only ones, and replace the rows 2 to 4 and the columns 1 to 3 of matrix A by matrix B. 
+
+```{r}
+A <- matrix(rnorm(16), nrow = 4)
+A
+
+B <- matrix(rep(1, 9), nrow = 3)
+B
+
+A[2:4, 1:3] <- B
+A
+```
+
+In order to manipulate data frames, we have two main options:
+- as a matrix using the `[ , ]`,
+- or as a list using the `$`.
+
+```{r}
+X <- data.frame(
+    x = c(1, 2, -3, 5, 3),
+    y = c(1, 2, 0, -1, 6),
+    z = c("m", "f", "m", "f", "f")
+)
+X
+```
+
+
+```{r}
+Y <- X[3:5, ] # I ask R to give the data for the rows 3 to 5 and all the columns
+Y
+class(Y)
+```
+
+Thanks to the `[,]`, it is possible to access and manipulate a data frame in the same way as a matrix. Of course, we can also do conditional access:
+
+```{r}
+Xf <- X[X[, 3] == "f", 1:2]
+Xf
+```
+
+The above command create a new data frame `Xf` which contains the data for the two first variables only for the individuals that have the value `'f'` on the last variable of `X`.
+
+The alternative to access the elements of a data frame is by using the `$`. In this way, the `$` will allow to access to one specific variable of the data frame by using the variable name.
+
+```{r}
+X$z
+```
+
+The result of such an access will be a vector!
+
+```{r}
+X
+X$x[(X$y < 3) & (X$z != "m")]
+```
+
+> Remark: the operator `!=` means 'different'.
+
+In case of a data frame, the data may correspond to real persons and it may be interesting to name the rows using the person names. In fact, it is possible to do so with the `rownames` funtion:
+
+```{r}
+rownames(X) <- c("Charles", "Alexis", "Anthony", "Ahmed", "Faouzi")
+X
+
+X["Ahmed", ]
+```
+
+With data frames, we can access the data also using row and column names, which is very useful when searching someone in a big data set.
+
+At this point, I can also introduce a few useful functions:
+
+```{r}
+colnames(X)
+rownames(X)
+
+which(rownames(X) == "Anthony")
+```
+
+When trying to access the element of a list, we again have two options:
+- the classical way is to use the `$`,
+- the alternative way is to use the `[[ ]]`.
+
+```{r}
+charles <- list(
+    name = "Bouveyron",
+    age = 22,
+    nb_of_cats = 299,
+    grades = c(100, 100, 100)
+)
+charles
+
+charles$age
+charles$grades[3]
+```
+
+If the list contains a lot of fields, it is possible to access some specific fields through its index with the `[[ ]]`:
+
+```{r}
+charles[[2]]
+
+charles[[4]][3] # The 3rd element of the 4th-field vector of the list
+```
+
+This possibility is also used sometimes to create lists of lists:
+
+```{r}
+mylist <- list(
+    list(name = "Bouveyron", age = 22),
+    list(nb_of_cats = 299, grades = c(100, 100, 100))
+)
+
+mylist
+```
+
+> Exercise: how to extract the 3rd element of grades in the second list?
+
+```{r}
+mylist[[2]]$grades[3]
+mylist[[2]][[2]][3]
+```
+
+> Some useful commands:
+- use the arrows of the keyboard to navigate in the history of the console commands,
+- the command `Ctrl-l` allows to clean the console,
+- the command `rm(list=ls())` allows to clear the memory of R.
+
+## The objects and functions in R
+
+The different elements in the memory of R can be split into 3 parts: objects, operators and functions. The operators (`+`, `*`, ...) are of course easy to differentiate from objects and functions. Regarding the difference between objects and functions, the functions have to be called in any case with brackets `(...)`. Thanks to this, it is always possible for R to identify the functions!
+
+```{r}
+x <- rnorm(100)
+mean <- mean(x)
+mean
+```
+
+> Remark: a function that has no arguments should be called with empty brackets `()`! This is in particular the case of the `ls()`.
+
+Regarding the order for passing to a funtion the different arguments, two cases are possible:
+
+- you look at the help page of the function and you provide the argument in the right order: in this case, there is no need to recall the name of the arguments:
+
+```{r}
+a <- seq(-pi, pi, length.out = 100)
+b <- sin(a)
+plot(a, b, type = "l")
+```
+
+- if you prefer to provide the argument in no specific order, then you'll have to explicitely provide the argument names in addition to their values:
+
+```{r}
+plot(y = b, x = a, type = "l")
+```
+
+
+## A first tour of the graphical system
+
+The graphical system of R is pretty powerful... if we master it! The system may be surprising at first because it is working like a lego: we have to add elements by elements on the plot.
+
+The `demo(graphics)` allows to have an overview of the basic plots that you can produce with R.
+
+These plots are only the most basic plots that we can produce with R. It is indeed also possible to use advanced libraries such that ggplot, etc...
+
+The most basic graphical function is the `plot` function.
+
+```{r}
+height <- rnorm(100)
+weight <- rnorm(100)
+plot(height, weight)
+title(main = "My wonderful plot")
+```
+
+The plot functions is probably one of the functions with the largest number of options. The documentation of the plot function is huge!
+
+```{r}
+plot(height, weight, col = "lavender", pch = 19, cex = 2)
+title(main = "My wonderful plot")
+```
+
+## How to find information about the functions?
+
+The documentation of R is of very high quality thanks to the very strict process of package selection on the CRAN server. This is probably the place where R is clearly in advance compared to other softwares, even some non-free softwares.
+
+When you would like to find help in R about a specific data science task, there is a two-step process to follow:
+- use the `??` operator with a keyword to find the candidate functions to solve your problem,
+- once you identified the right function, use the `?` with the name of the function to access the help of the function.
+
+A an example, let's assume that we want to do a T-test (the Student's test) in R:
+
+```{r}
+??Student
+
+# I get a list of candidate functions and I identified t.test as
+# the function I'm looking for
+
+?t.test
+```
+
+> Exercise: find a function that allows to transpose a matrix
+
+```{r}
+??transpose
+
+?t
+```
+
+The format of any help page is always the same and it is well structured:
+- a Title and a Descritpion: a consise 1-line title and a slightly longer description of the function,
+- Usage: it shows how to call the function and list all options with their default value,
+- Arguments: this field lists and details all input options of the function,
+- Details: it provides technical details about the functions,
+- Value: it lists and explains the output values which are returned by the function,
+- Examples: it provides a working example that demonstrates how to use the function.
+
+The high-level control on the CRAN R packages ensures that all functions and examples will work on your computer.
+
+## Load and save data sets
+
+Most of the time, we do not create the data in R but we load them from a file saved on the hard disk. The data may come in a large variety of formats:
+- the most basic format is the plain-text format (such as CSV): this is probably the easiest way to share data between two systems. For instance, CSV (comma separated values) files are very common and can be in particular read and exported by Excel.
+- many softwares/languages have also more adavanced formats, often binary files, which require specific function to read them. We can cite for instance: Rdata for R, MAT for Matlab, json for Python, ...
+
+In order to load some data, we will have to use either the `read.table` (or extensions) or the `load` functions, depending on the type of the data.
+
+For plain-text data:
+
+```{r eval=FALSE, include=FALSE}
+# Let's assume we have a data set myfile.csv in some directory
+X <- read.table(file = "path/to/the/file/myfile.csv")
+```
+
+For Rdata files:
+
+```{r eval=FALSE, include=FALSE}
+# Let's assume we have a data set myfile.Rdata in some directory
+load(file = "path/to/the/file/myfile.Rdata")
+```
+
+For other format, you will have to load a specific library and then use the appropriate function:
+
+```{r eval=FALSE}
+# Let's assume we have a data set myfile.json in some directory
+# install.packages("rjson") # if not already installed
+library(rjson)
+X <- fromJSON(file = "path/to/the/file/myfile.json")
+```
+
+In order to save the data you created or manipulated with R, you may use the `write.table` or `save` functions. The latter is for Rdata files.
+
+```{r eval = FALSE}
+X <- data.frame(
+    x = c(1, 2, -3, 5, 3),
+    y = c(1, 2, 0, -1, 6),
+    z = c("m", "f", "m", "f", "f")
+)
+
+write.table(X, file = "~/Desktop/R4BD/X.csv")
+save(X, file = "~/Desktop/R4BD/X.Rdata")
+# toJSON(X)
+```
+
+> Exercise: 
+- Create a data frame D with 50 rows, 4 continous variables and add a few missing values on the last two variables.
+- Save D into a CSV file on your disk,
+- Load the data from the file with a new name X and replace the missing values with 0,
+- Finally, plot the data from the two first variables.
+
+```{r eval = FALSE}
+# Question 1
+D <- data.frame(
+    x = rnorm(50), y = runif(50),
+    z = rnorm(50), w = runif(50)
+)
+
+D[sample(1:50, 10), 3] <- NA
+D[sample(1:50, 5), 4] <- NA
+
+D
+
+# Question 2
+write.table(D, file = "~/Desktop/R4BD/D.csv")
+
+# Question 3
+X <- read.table(file = "~/Desktop/R4BD/D.csv")
+X[is.na(X)] <- 0
+X
+
+# Question 4
+plot(X[, 1:2])
+```
+
+> Remark: when loading a file, you may have to decide what is a missing value, what is a text entry, etc...
+
+```{r eval=FALSE}
+X <- read.table(
+    file = "myfile.csv",
+    dec = ",",
+    na.strings = " ",
+    stringsAsFactors = FALSE,
+    sep = "\t",
+    header = FALSE
+)
+```
+
+

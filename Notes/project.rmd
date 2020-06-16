@@ -1,0 +1,941 @@
+---
+title: "Paris AirBnB Data Analysis 2015-2016"
+author: "Faouzi Braza"
+output:
+  html_document:
+    highlight: pygments
+    df_print: paged
+    code_folding: hide
+    fig_caption: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r set-options, echo = FALSE, cache = FALSE}
+options(width = 80)
+```
+
+# Introduction and Objectives
+<p style = "text-align: justify;">Every night, hundreds of thousands of tourists 
+prefer to pay and stay in the property of a stranger, found online on Airbnb 
+webstie instead of booking a traditional tourism accommodation such as 
+a hotel. Since Airbnb 2008, proposed an online platform where people can rent 
+mostly for tourism different type of properties: rooms, appartments, houses and 
+sometimes more esoteric places. Over the past several years Airbnb has rapidly
+and massively grown to the point that today anyone can rent and find a spot
+virtually in any country or city of the world.</p> 
+
+<p style = "text-align: justify;"> In this report we focus on Paris, capital of 
+France, and will try to decipher some general tendencies regarding the prices 
+proposed by parisian hosts. This analysis will be performed in the frame of four
+major objectives. Firstly we will try to uncover the features that impact on the 
+price of property with a specific focus on appartment. Secondly we will focus more 
+on parisian hosts and try to determine how many appartments a parisian commonly 
+propose for renting. Thirdly we will take a geographical approach in trying to 
+assess whether locations of the properties impact on prices. Finally we study
+and quantify the number of visits  in the capital longitudinally based on the 
+number of AirBnB renting.</p>
+
+
+# Methods
+
+
+## Software and packages
+<p style = "text-align: justify;">R session details are provided at the end of
+this report as the ouput of the R `sessionInfo()` function. The main packages
+imported and used for this data analysis are: `ggpubr_0.3.0`, `ggplot2_3.3.0`, 
+`purrr_0.3.4`, `plyr_0.8.5`, `readr_1.3.1`.</p>
+```{r}
+library(readr)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(ggpubr)
+library(broom)
+library(knitr)
+library(rgdal)
+library(leaflet)
+```
+
+
+## Description of the data set
+
+
+```{r}
+load("./Raw_Data/AirBnB.Rdata")
+ls()
+```
+
+
+<p style = "text-align: justify;">The`"AirBnB.Rdata"` data set comes as two 
+different tables named `L` and `R`.</p>
+
+
+```{r}
+L
+```
+
+
+```{r}
+R
+```
+
+
+<p style = "text-align: justify;">We can see that the table `L` is highly 
+complex with notably 95 variables of different types. Some work regarding
+cleaning will be needed as we will see later on. The second table `R` is less
+complex and contained only two variables. To make the naming more appropriate
+we are going to save both tables into variables `airbnb_data` and 
+`supp_data` respectively.</p>
+
+
+```{r}
+airbnb_data <- L
+supp_data <- R
+```
+
+
+## Custom Helper Methods
+
+
+<p style = "text-align: justify;">We designed some custom functions used for
+data wrangling, cleaning and visualization. We are going to load them now, so
+that they will be accessible later during our analysis.</p>
+
+
+#### Quantify Missing Values
+
+
+<p style = "text-align: justify;">To quantify missing values two custom functions 
+have been designed and implemented: `count_missing_values()` and 
+`print_count_missing_values()`. The first provides an algorithm to count missing
+values and calculate their proportion inside each variable. 
+The `print_count_missing_values()` provides an interface to output the results in a 
+readable manner.</p>
+
+
+```{r}
+print_count_missing_values <- function(columns, index, x, y) {
+  message <- paste(
+    "Missing Values in Column ", columns[index], " is: ", x, ".\n",
+    "This correspond to: ", y, "% of missing value.\n\n", sep = ""
+  )
+
+  cat(message)
+}
+```
+
+
+```{r}
+count_missing_values <- function(data, list_column_names) {
+  total <- nrow(data)
+  len <- length(list_column_names)
+
+  for (index in seq_len(len)) {
+    count_na <- sum(is.na(data[, index]))
+    freq_na <- round((count_na / total) * 100, 2)
+    print_count_missing_values(
+      list_column_names,
+      index, count_na, freq_na
+    )
+  }
+}
+```
+
+
+<p style = "text-align: justify;">It is important to note here that these methods
+will only count `NA` missing values and will not consider any `0` or `""` empty
+strings as missing values.</p>
+
+
+#### Data Types manipulation
+
+
+<p style = "text-align: justify;"> Our data set contains several variables of different types. 
+To manipulate some variables notably numeric ones, we need to ensure that they are loaded with 
+the appropriate data type. A good example of this is the values contained in the `price` column.<p>
+
+
+```{r}
+glimpse(airbnb_data[, "price"])
+```
+
+<p style = "text-align: justify;"> Interestingly `price` values are **factor** 
+typed (`fct`). In R, a factor is a vector that can contain only predefined 
+values, and is used to store categorical data. Additionnaly we can see that 
+the `$` sign is visible. `price` should be a continuous variable and we might anticipate 
+that manipulating this variable as `fct` type to make calculation would lead
+to some problems. Consequently we need to convert it into a more appropriate data 
+type. In this regard the design of two functions `from_factor_to_decimal` and 
+`clean_price_string` is proposed below:</p>
+
+
+```{r}
+clean_price_string <- function(price) {
+  price %>%
+  gsub("[$]", "", .) %>%
+  gsub("[,]", "", .)
+}
+```
+
+
+```{r}
+from_factor_to_decimal <- function(prices) {
+  prices %>%
+    map(., as.character) %>%
+    map(., clean_price_string) %>%
+    unlist() %>%
+    as.double()
+}
+```
+
+
+# Results
+
+
+## Relationship between prices and appartment features.
+
+
+<p style = "text-align: justify;">As a customer the first parameter to watch
+when renting a place is the price. It is quite obvious that prices will be 
+greatly affected by the type of property and room we would like to rent. For 
+example a shared-room in a dorm might be cheaper than a shared-room in a big 
+villa. Similarly renting a full appartment should be more expensive than a
+single room. To get a more precise feeling about the data in Paris we are first
+going to investigate the AirBnB data set under this angle and try to decipher
+the main factors that influence the prices of proposed properties. Ultimately
+we will identify what features impact more speciffically on appartments prices
+proposed in Paris by AirBnB hosts.</p>
+
+
+### The parisian offer in AirBnB is quite homogeneous and proposes essentially entire appartments to rent.
+
+
+<p style = "text-align: justify;">
+Before analysing prices, it would be useful to reduce the size of our data. 
+We could select relevant features and gather all of them in a new data table. 
+When renting a place as a customer, there are some obvious aspects that 
+we look at first: type of room or property, the number of rooms and bathrooms 
+are the most obvious.</p>
+
+
+```{r}
+colnames(airbnb_data)
+```
+
+
+<p style = "text-align: justify;">To fulfill our objectives we selected the following 
+variables: `property_type`, `room_type`, `bathrooms`, `bedrooms`, `square_feet`, 
+`neighbourhood_cleansed`, `id`, `host_id`, `price` and save the 
+resulting table into a new variable named `features_and_price`.</p>
+
+
+```{r}
+features_and_price <- airbnb_data %>%
+  select(property_type,
+         room_type,
+         bathrooms,
+         bedrooms,
+         square_feet,
+         neighbourhood_cleansed,
+         id,
+         host_id,
+         price)
+
+features_and_price
+```
+
+
+<p style = "text-align: justify;"> In a first step we are going to assess the 
+robustness and relevance of the selected data by notably assessing the amount
+of missing values present in each variable.</p>
+
+
+```{r}
+column_names <- colnames(features_and_price)
+count_missing_values(features_and_price, column_names)
+```
+
+
+<p style = "text-align: justify;">Here we found that 95% of values present in 
+the `square_feet` variable correspond to missing data. A very small proportion of 
+values in `bedrooms` and `bathrooms` columns are also missing. This observation 
+prompts us to first and unambigously suppress the `square_feet` variable from 
+`airbnb_data`.In contrast handling missing values from `bedrooms` and `bathrooms` requires a 
+bit of a discussion. Indeed we could use different approaches here. First we could 
+fill the missing values by replacing them with the most representative value. 
+As `bedrooms` and `bathrooms` variables are categorical here we could use the 
+mode and fill the missing values with it. Another approach could be to simply 
+select out these rows as they represent so little. This will not affect the 
+overall data set and analysis. This approach has been choosen here.</p>
+
+
+```{r}
+features_and_price <- features_and_price %>%
+  select(-square_feet) %>%
+  filter(!is.na(bedrooms) & !is.na(bathrooms))
+```
+
+
+<p style = "text-align: justify;">Next let's investigate more closely the values
+present in the `room_type` and `property_type` columns.</p>
+
+
+```{r}
+features_and_price %>%
+  distinct(room_type)
+```
+
+
+```{r}
+features_and_price %>%
+  distinct(property_type)
+```
+
+
+<p style = "text-align: justify;">We can see that parisian hosts propose three
+types of rooms: `Entire home/apt`,  `Private room` and `Shared room`. Property
+types are more diverse. Firstly we can see that missing values are there also. 
+Some that our previous functions did not catch. This is because the missing 
+value is not stated as `NA` but rather as an empty `factor`, `""`.  Secondly 
+we have some surprising propositions there as `cabin`, `cave`, `chalet`, 
+`earth house` or `igloo`. A quick look at the count of these types also revealed
+that they represent very marginal proposition:
+
+
+```{r}
+features_and_price %>%
+  count(property_type)
+```
+
+
+<p style = "text-align: justify;">There is also a `other` tag here where all these
+unexpected propositions could have been piled in. Nevetheless `other` would be
+to vague to draw any conclusion from an analysis. Consequenlty we are going to
+keep only the following relevant and explicit property types to perform our analysis:
+`Apartment`, `Bed & Breakfast`, `Boat`, `Condominium`, `Dorm`, `House`, `Loft`,
+`Townhouse`, `Villa`.</p>
+
+
+```{r}
+list_property_types <- c("Apartment",
+                         "Bed & Breakfast",
+                         "Boat",
+                         "Condominium",
+                         "Dorm",
+                         "House",
+                         "Loft",
+                         "Townhouse", 
+                         "Villa")
+
+features_and_price <- features_and_price %>%
+  filter(property_type %in% list_property_types)
+```
+
+
+<p style = "text-align: justify;"> Quantifying the number of rooms by subtypes
+revealed that the massive majority of available rooms were in the variable
+`Entire home/apt` (Figure 1B). Then comes the `Private room` and 
+the `Shared room`. The picture is the same if we look now by property types. 
+(Figure 1A). Indeed except for `Bed & Breakfast` which offers essentially 
+private rooms or `Dorm` where you can mostly find shared rooms the other types 
+of proprety majoritarely consist on renting the whole place (Figure 1A).</p>
+
+
+```{r fig.height = 9, fig.width = 7, fig.cap = "Figure 1: Room and property types."}
+room_type_count <- (ggplot(features_and_price, 
+                           aes(x = room_type))
+                    +  geom_bar(stat = "count",
+                                aes(fill = room_type))
+                    +  scale_fill_brewer(palette = "Paired")
+                    +  labs(title = "Numbers of Rooms by Room Types",
+                            x = "",
+                            y = "# Count",
+                            fill = "Room Type")
+                    +  theme(axis.text.x = element_text(
+                            angle = 90,
+                            hjust = 1,
+                            vjust = 0.5)))
+
+property_types <- (ggplot(features_and_price,
+                          aes(x = "",
+                              fill = room_type))
+                   +  geom_bar(width = 0.5)
+                   +  facet_wrap(~ property_type,
+                                   scales = "free_y",
+                                   ncol = 3)
+                   +  scale_fill_brewer(palette = "Paired")
+                   +  labs(title = "Room Type Proportion by Property Type\n",
+                           x = "",
+                           y = "# Count",
+                           fill = "Room Type"))
+
+ggarrange(property_types,
+          nrow = 2,
+          labels = "A",
+          ggarrange(room_type_count,
+                    ncol = 2,
+                    labels = "B"))
+```
+
+
+<br></br>
+
+
+### Prices are significantly different among the different type of properties
+<p style = "text-align: justify;">We previously found that the parisian spectrum
+of offers was quite focused on entire appartment to rent. This sounds a bit obvious
+as from an urbanistic perspective you will find much more appartments than houses in 
+Paris. Next we sought to investigate whether the different properties were proposed 
+or not at similar prices on AirBnB platform. In order to do that we first need to
+get a closed look at the `price` variable present in our data set. As stated before
+its data type is `factor`. This might be limiting if we want to do some calculations
+or plot its distribution.</p>
+
+
+```{r}
+prices <- from_factor_to_decimal(features_and_price["price"])
+features_and_price["price"] <- prices
+typeof(features_and_price$price)
+```
+
+
+<p style = "text-align: justify;">Now converted to a numeric type, we can now assess
+the distribution of the `price` variable.</p>
+
+
+```{r fig.height = 3.5, fig.width = 3.5, fig.cap = "Figure 2: Distribution of prices in Paris"}
+(ggplot(features_and_price,
+        aes(x = price))
+  + geom_histogram(bins = 80,
+                   aes(y = ..density..),
+                   fill = "#fb8072")
+  + geom_density(colour = "#1f78b4",
+                 alpha = 0.2,
+                 lty = 2,
+                 fill = "#1f78b4")
+  + labs(x = "Price",
+         y = "Density"))
+```
+
+
+<br></br>
+
+
+<p style = "text-align: justify;">As shown in Figure 2, the distribution of the 
+`price` variable is strongly skewed. More stinkingly we can see that the range 
+of values is quite large.</p> 
+
+
+```{r}
+summary(features_and_price$price)
+```
+
+
+<p style = "text-align: justify;">A quick computation using the R `summary()` 
+function -- as done above -- showed that the minimum price is `$0` and the 
+maximum is `$6081`. Although human kindness is limitless, free rent do not
+exist in AirBnB. Additionnaly it sounds unreasonable to spend $6081 one night 
+for renting a property. At the time of writing, a quick request for renting in
+Paris using AirBnB website revealed that the range of price goes from around $10 to 
+approximatively $1000. Consequently we will use these values as range for 
+the variable `price`.</p>
+
+
+<br></br>
+![](AirBnB.png)
+<br></br>
+
+
+```{r fig.height = 3.5, fig.width = 3.5, fig.cap = "Figure 3: Updated distribution of prices in Paris."}
+features_and_price <- features_and_price %>%
+filter(features_and_price$price >= 9 &
+       features_and_price$price <= 1000)
+
+(ggplot(features_and_price,
+        aes(x = price))
+  +  geom_histogram(bins = 80,
+                    aes(y = ..density..),
+                    fill = "#fb8072")
+  +  geom_density(colour = "#1f78b4",
+                  alpha = 0.2,
+                  lty = 2,
+                  fill = "#1f78b4")
+  +  labs(x = "Price",
+          y = "Density"))
+```
+
+
+<br></br>
+
+
+```{r}
+summary(features_and_price$price)
+```
+
+
+<p style = "text-align: justify;">After cleaning we can see that median of 
+prices is still $75 with a minimum at $9 and and a maximum at $997. The distribution 
+is  not gaussian but remains less skewed (Figure 3). Next we will investigate if 
+prices are different between property types proposed in Paris by AirBnB hosts.</p>
+
+
+<br></br>
+
+
+```{r fig.height = 8, fig.width = 8, fig.cap = "Figure 4: Visualization of Prices According to Property Types"}
+price_by_property <- (ggplot(features_and_price,
+                             aes(x = price))
+                      +  geom_histogram(bins = 20,
+                                        aes(y = ..density..),
+                                        fill = "#fb8072")
+                      +  geom_density(alpha = 0.2,
+                                      lty = 2,
+                                      fill = "#1f78b4")
+                      +  facet_wrap(~ property_type,
+                                    scales = "free_y")
+                      +  labs(x = "Price",
+                              y = "Density"))
+
+box_price_by_property <- (ggplot(features_and_price)
+                          +  geom_boxplot(aes(x = property_type,
+                                              y = price,
+                                              fill = property_type))
+                          +  labs(x = "Property Type",
+                                  y = "Price",
+                                  fill = "Property Type")
+                          +  coord_flip())
+
+ggarrange(price_by_property,
+          box_price_by_property,
+          nrow = 2,
+          labels = c("A", "B"))
+```
+
+
+<br></br>
+
+
+<p style = "text-align: justify;"> Looking at the distribution of price data 
+inside each kind of property (Figure 4A) revealed that each property type 
+displays an almost similar `price` distribution. Except for Villa, most of the 
+prices are contained within a range of $9 to $250. To get a more precise picture 
+we propose a boxplot representation of this finding in panel (Figure 4B). This 
+allows us to capture more precisely this phenomenom but also shed light on some 
+potent difference between the groups. To assess statistically these differences 
+and because distribution of the price variable is not normal we first chose to 
+perform a kruskal wallis test to assess wether prices are similar between AirBnB
+properties proposed in Paris (Our null hypothesis). Our test rejected the null 
+hypothesis prompting us to next investigate the differentce between each groups. 
+We used a pairwise Wilcoxson's test to achieve this goal. Result for each test
+can be read below on tables. Herein we will consider significance only when 
+p-value < 0.01.</p>
+
+
+```{r}
+krus_1 <- kruskal.test(features_and_price$price,
+                       features_and_price$property_type)
+tidy(krus_1)
+
+
+pair_wilcox_1 <- pairwise.wilcox.test(features_and_price$price,
+                                      features_and_price$property_type)
+tidy(pair_wilcox_1, n = 36)
+```
+
+
+<p style = "text-align: justify;">Our anlysis revealed that villas and boats 
+are the most expensive choices when compared to others. If you want to save money,
+rent a room in a dorm as the median price is significantly lower than all other groups 
+Finally for average budgets choosing to rent an appartment or a Bed & Breakfast 
+might be a good idea as their median prices are significantly lower then other 
+groups except when compared to townhouses. Altogether our analysis demonstrated 
+that AirBnB prices highly depends on the type of proposed properties and this might 
+be taken into consideration when looking for a place to rent in Paris.</p>
+
+
+### Number of bedrooms and the location significantly impacts on the prices of parisian appartments avalaible in AirBnB
+
+
+<p style = "text-align: justify;">In our next part of our analysis we are going to 
+focus on appartments and try to decipher which feature -- among the following: 
+`bathrooms`, `bedrooms` , `accommodates` and `neighbourhood_cleansed` -- impacts 
+on nightly prices.</p>
+
+```{r}
+apt_features_and_price <- features_and_price %>%
+  filter(property_type == "Apartment")
+```
+
+<p style = "text-align: justify;">The variable `bathroom` has surprising values.
+Actually this comes from real estate listings where there is definition for full,
+half or 3/4 bathroom. I am not going to comment this, which I think is a pure 
+anglon-saxon way of seeing and optimizing things. Here we are going to consider 
+that 0.5 is not a bathroom. A bathroom is a room with a sink and a bathtop minimum. 
+So I make the arbitrary choice here to round down the values assigned to the 
+`bathroom` variable.</p>
+
+<p style = "text-align: justify;">As shown in Figure 5A & 5C the prices and 
+number of bathrooms concomitantly increase up to 3 bathrooms. At 4 and 5 bathrooms
+prices start to have a very inconsistent distribution. Above it, values are even more 
+unexpected. Indeed for 6, 7 and 8 bathrooms prices are very low. The most plausible 
+explanation to this could be that renting offers with number of bathrooms superior 
+to 5 would in reality consist of private or shared rooms in big appartments. Let's
+check this.</p>
+
+```{r}
+apt_features_and_price %>%
+  filter(bathrooms > 5) %>%
+  count(room_type)
+```
+
+<p style = "text-align: justify;">As we can see here the majority of renting offers
+in appartments with a number of bathrooms superior to 5 do not correspond to 
+to shared or private rooms. Another possibility could be that some offers
+while proposing access to an entire appartment will in reality propose you to 
+sleep on a couch ! This is actually how AirBnB started in San-Fransisco in 2008. 
+So you would be in an entire house with several bathrooms but will sleep on a sofa ! 
+Figure 5E is an attempt to investigate this point. In this figure, columns 
+correspond to the number of available bedrooms and rows correspond to the number 
+of bathrooms. For readability we limit both numbers to 6. First we can see that 
+we have offers with no bedrooms ! This suggest that the rentee should sleep on 
+a sofa, a couch or a matrice. For 5 bathrooms we can see that the data is split 
+in two with some offers proposing several bedrooms and others none (Figure 5A & E). 
+Altogether data depicted in Figure 5A & E suggest that the number of bathrooms 
+is not the most reliable factor to rely on to anticipate the price of an appartment 
+on AirBnB. Number of bedrooms however seems to be more accurate in this regard. 
+(Figure 5B & 5D). We can clearly see a concomitant increase of prices in function 
+of the number of bedrooms which strongly suggests that the `bedrooms` variable is 
+reliable to anticipate prices of parisian appartments available on AirBnB.
+To be more accurate and assess if the differences observed graphically for the 
+`bedrooms` and `bathrooms` variables are significant we subsequently performed 
+kruskal-Wallis and pairwise Wilcoxson's test.</p>
+
+<p style = "text-align: justify;">In a last part we wanted to check how many appartment
+one host usually proposes. In other words we want to check if the market here is balanced
+or concentrated into the hands of a few landlords. To do this we (i) count the number
+of occurence of `host_id` in our table, (ii) mutate our table to create a categorical
+variable to group counts (1 appartment, between 2 and 5, more than 5) and (iii) we 
+count the occurence of our groups. As shown in Figure 6F the massive majority of host
+has only one appartment to rent on AirBnB. We do have a substantial amount of landlords
+who rent between 2 and 5 appartment. Above numbers are quickly decreasing to represent
+only a very tiny proportion of the whole.</p>
+
+
+```{r}
+count_by_host_1 <- apt_features_and_price %>%
+  group_by(host_id) %>%
+  summarise(number_apt_by_host = n()) %>%
+  ungroup() %>%
+  mutate(groups = case_when(
+    number_apt_by_host == 1 ~ "001",
+    between(number_apt_by_host, 2, 5) ~ "002-005",
+    number_apt_by_host > 5 ~ "006-152"
+    )
+  )
+
+count_by_host_2 <- count_by_host_1 %>%
+  group_by(groups) %>%
+  summarise(counting = n())
+```
+
+
+<br></br>
+
+
+```{r fig.height = 12, fig.width = 9, fig.cap = "Figure 5: Number of bedrooms and location discriminate parisian appartment prices on AirBnB"}
+apt_features_and_price["bathrooms"] <- apt_features_and_price["bathrooms"] %>%
+  map(., floor)
+
+bath_distr <- (ggplot(apt_features_and_price,
+                      aes(x = price))
+               +  geom_histogram(bins = 15, 
+                                 aes(y = ..density..),
+                                 fill = "#fb8072")
+               +  geom_density(lty = 2, color = "#1f78b4")
+               +  labs(title = "Distribution of prices vs Bathroom numbers",
+                       x = "Price",
+                       y = "Density")
+               +  theme(axis.text.x = element_text(angle = 90,
+                                                   hjust = 1,
+                                                  vjust = 0.5),
+                        axis.text.y = element_text(size = 7))
+               +  facet_wrap(~ factor(bathrooms), 
+                             scales = "free_y"))
+
+beds_distr <- (ggplot(apt_features_and_price,
+                      aes(x = price))
+               +  geom_histogram(bins = 15,
+                                 aes(y = ..density..),
+                                 fill = "#fb8072")
+               +  geom_density(lty = 2,
+                               color = "#1f78b4")
+               +  labs(title = "Distribution of prices vs Bedrooms numbers",
+                       x = "Price",
+                       y = "")
+               +  theme(axis.text.x = element_text(angle = 90,
+                                                   hjust = 1,
+                                                   vjust = 0.5),
+                        axis.text.y = element_text(size = 7))
+               +  facet_wrap(~ factor(bedrooms),
+                             scales = "free_y"))
+
+beds_box <- (ggplot(apt_features_and_price)
+            +  geom_boxplot(aes(x = factor(bedrooms),
+                            y = price, 
+                            fill = factor(bedrooms)))
+            +  labs(x = "# of Bedrooms",
+                    y = "Price",
+                    fill = "# of Bedrooms")
+            +  coord_flip())
+
+
+## Select for bathrooom <= 6 for graphical purpose
+apt_features_and_price_bath <- apt_features_and_price %>%
+  filter(bathrooms <= 6)
+
+bath_box <- (ggplot(apt_features_and_price_bath)
+             +  geom_boxplot(aes(x = factor(bathrooms),
+                             y = price,
+                             fill = factor(bathrooms)))
+             +  labs(x = "# of Bathrooms",
+                     y = "Price",
+                     fill = "# of Bathrooms")
+             +  coord_flip())
+
+bivariate_plot <- (ggplot(apt_features_and_price_bath)
+                   +  geom_boxplot(aes(x = "",
+                                       y = price,
+                                       fill = factor(bedrooms)))
+                   +  labs(x = "",
+                           y = "Price",
+                           fill = "# Bedrooms")
+                   +  facet_grid(rows = vars(bathrooms),
+                                 cols = vars(bedrooms)))
+
+num_apt_by_host_id <- (ggplot(count_by_host_2, aes(x = "", y = counting))
+ +  geom_col(aes(fill = factor(groups)), color = "white")
+ +  geom_text(aes(y = counting / 1.23, label = counting),
+              color = "black",
+              size = 5)
+ + labs(x = "", y = "", fill = "Number of appartments\nby host")
+ +  coord_polar(theta = "y"))
+
+ggarrange(bath_distr,
+          beds_distr,
+          bath_box,
+          beds_box,
+          bivariate_plot,
+          num_apt_by_host_id,
+          nrow = 3,
+          ncol = 2,
+          labels = c("A", "B", "C", "D", "E", "F"))
+```
+
+
+<br></br>
+
+
+#### Test Results for Prices reagrding `bathrooms` groups
+
+
+```{r}
+krus_2 <- kruskal.test(apt_features_and_price_bath$price,
+                       apt_features_and_price_bath$bathrooms)
+tidy(krus_2)
+
+pair_wilcox_2 <- pairwise.wilcox.test(apt_features_and_price_bath$price,
+                                      apt_features_and_price_bath$bathrooms)
+tidy(pair_wilcox_2)
+```
+
+
+#### Test Results for Prices regarding `bedrooms` groups
+
+
+```{r}
+krus_3 <- kruskal.test(apt_features_and_price$price,
+                       apt_features_and_price$bedrooms)
+tidy(krus_3)
+
+pair_wilcox_3 <- pairwise.wilcox.test(apt_features_and_price$price,
+                                      apt_features_and_price$bedrooms)
+tidy(pair_wilcox_3)
+```
+
+
+### High prices in some locations are associated with lower visist / renting levels.
+
+
+<p style = "text-align: justify;">As expected, our analysis demonstrates that the 
+price of an appartment also depends on its location (Figure 6A). Indeed when looking at the 
+most famous parisian quarters (Elysee, Palais-Bourbon Louvre or Luxembourg) we 
+can see that the median of their prices is higher than others (Figure 6A, Figure 7). 
+This can be explained by the fact that most of the hot spots are located in these 
+neighbourhoods. Additionnaly these neighbourhoods are historically the most expensive ones
+in the capital. Consequently it makes sense that renting prices on AirBnB are higher in these
+locations (Figure 6A, 7). To be more accurate and assess if the differences observed 
+graphically for the `neighbourhood_cleansed` variables are significant, we subsequently 
+performed kruskal-Wallis and pairwise Wilcoxson's test. All results are displayed 
+on tables below. Here significance is considered only when p-value < 0.01 
+(Table available under Figure 7). Finally we sought to investigate the visit rates inferred
+from number of rentings longitudinally in each parisian quarter from 2009 to end of 2016 (Figure 6B). 
+Based on renting rate, we can see a longitudinal increase of visits in all neighbourhoods along time. 
+This increase is easely explained by the growth of AirBnB over time and the importance that 
+this company took in the renting business over this predio of time. Nevetheless we can see 
+different patterns between the each neighbourhoods. Indeed we can see that the neighbourhoods
+with the lowest median of prices are often the most "visited" ones (Figure 6B, Figure 7).
+This makes sense especially for tourism and especially for usual AirBnB customers.
+They usually rent a place to get a feet on the ground as they will spend most of their
+time visiting the city. Given the excellent common transports network in Paris, it might
+be interesting to find a place a bit more outside from the hotspots and cheaper but still be able to
+reach quickly downtown thanks to common transportation.</p> 
+
+
+<br></br>
+
+
+```{r fig.height = 12, fig.width = 9, fig.cap = "Figure 6: The cheapest locations in Paris are also the most visited / rented ones"}
+location_box <- (ggplot(apt_features_and_price)
+                 +  geom_boxplot(aes(x = "",
+                                     y = price),
+                                     fill = "#67aad6")
+                 +  labs(x = "",
+                         y = "Price",
+                         fill = "# of Bedrooms")
+                 +  facet_wrap(~ factor(neighbourhood_cleansed)))
+
+# Renaming one column to get same naming necessary for joinning process
+apt_features_and_price <- apt_features_and_price %>%
+  rename(listing_id = id)
+
+# Join data from the two tables
+table <- inner_join(apt_features_and_price,
+                    supp_data,
+                    by = "listing_id")
+
+# Convert Date type from factor to date
+table["date"] <- table["date"] %>%
+  map(., as.Date)
+
+# Generating a table that aggregate data from data and id and count them
+# to get the number of renting by host and date
+longitudinal  <- table %>%
+  group_by(date, neighbourhood_cleansed) %>%
+  summarise(count_obs = n())
+
+# Plotting the time serie
+time_location <- (ggplot(longitudinal,
+                         aes(x = date,
+                             y = count_obs,
+                             group = 1))
+                  +  geom_line(size = 0.5,
+                               colour = "#67aad6")
+                  +  stat_smooth(color = "#FF5AAC",
+                                  method = "loess")
+                  +  scale_x_date(date_labels = "%Y")
+                  +  labs(x = "Year",
+                          y = "# Rented Appartment")
+                  +  facet_wrap(~ neighbourhood_cleansed))
+
+ggarrange(location_box,
+          time_location,
+          nrow = 2,
+          ncol = 1,
+          labels = c("A", "B"))
+```
+
+
+<br></br>
+
+
+```{r fig.cap = "Figure 7: Map with neighbourhoods corresponding price medians"}
+# Geojson Data got in gouv.fr
+map   <- readOGR("./Raw_Data/arrondissements.geojson")
+
+# Generating map layout
+paris <- leaflet(map) %>%
+  addProviderTiles(providers$Stamen.TonerLite)
+
+# Setting gradient of color based on the median of price
+pal <- colorNumeric(
+  palette = "YlOrRd",
+  domain = map$median)
+
+# Function that output text using html tags
+labels <- sprintf(
+  "<strong>%s</strong><br/> Median Price: $%g",
+  map$l_aroff, map$median
+) %>% lapply(htmltools::HTML)
+
+
+# Generating our interactive map
+paris %>%
+  addPolygons(dashArray = "2",
+              color = "white",
+              weight = 2,
+              smoothFactor = 0.2,
+              fillOpacity = 0.5,
+              fillColor = ~pal(median),
+              highlight = highlightOptions(weight = 5,
+                                           color = "black",
+                                           dashArray = "",
+                                           fillOpacity = 0.6,
+                                           bringToFront = TRUE),
+              label = labels) %>%
+  addLegend("bottomright",
+             pal = pal,
+             values = ~median,
+             title = "Median Prices",
+             labFormat = labelFormat(prefix = "$"),
+             opacity = 1)
+```
+
+
+<br></br>
+
+
+#### Test Results for Prices regarding `location` groups
+
+
+```{r}
+krus_4 <- kruskal.test(
+            apt_features_and_price$price,
+            apt_features_and_price$neighbourhood_cleansed
+            )
+tidy(krus_4)
+
+
+pair_wilcox_4 <- pairwise.wilcox.test(
+                   apt_features_and_price$price,
+                   apt_features_and_price$neighbourhood_cleansed
+                   )
+tidy(pair_wilcox_4)
+```
+
+
+<br></br>
+
+
+### High prices in some locations are associated with lower visist / renting levels.
+
+
+# Conclusion
+
+
+<p style = "text-align: justify;">The exploratory analysis above highlights some 
+interesting trends and patterns, as well as some factors that can increase an 
+Airbnb house’s price as the type of property, its number of room and its locations.
+Some more works could have been done notably by cleaning and tackling the `amenities`
+variable. Typed as a `factor` in our data set it actually lists a lot of extra features
+related to furnitures, presence of balcony and other extra services proposed by the 
+host that could eventually influence the price. This would imply extra text / strings
+manipulation to and carefull cleaning to actually extract some insights from.
+Additonnaly we provided a Shiny applications which provide a quick and easy way
+go throught the data and its analysis.</p>
+
+```{r}
+sessionInfo()
+```

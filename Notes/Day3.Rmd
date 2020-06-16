@@ -1,0 +1,551 @@
+---
+title: "R4BD - Day 3"
+author: "Pr. Charles BOUVEYRON"
+date: "5/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+> Exercise: We will use a data set named `starwars` in the `dplyr` package to answer the following questions:
+
+- install the package and load the data into your environnment, 
+
+```{r}
+#install.packages('dplyr')
+library(dplyr)
+data(starwars)
+
+starwars
+```
+
+- list the names of the human characters,
+
+```{r}
+starwars$name[starwars$species == 'Human']
+```
+
+For some characters, we don't know their names and a `NA` is provided instead. 
+
+- list the different worlds,
+
+```{r}
+# factor(starwars$homeworld)
+unique(starwars$homeworld)
+```
+
+
+- display on a plot the number of characters of each type (species) in decreasing order,
+
+```{r}
+counts = table(starwars$species)
+counts = sort(counts,decreasing = TRUE)
+#counts
+barplot(counts,col='lavender',cex.names=0.75,las=2)
+```
+
+We can do it also with ggplot, but we need first to create a data frame with the count data!
+
+```{r}
+X = data.frame(counts)
+X$types = names(counts)
+
+library(ggplot2)
+ggplot(data = X) + geom_bar(aes(x=counts))
+```
+
+- visulize the relationship between the height and weight of the different characters.
+
+```{r}
+ggplot(data=starwars) +
+  geom_point(aes(x=height,y=mass)) +
+  geom_smooth(mapping = aes(x=height,y=mass),method = 'lm')
+```
+
+We can also produce some plots of the relationship between the height and weight according to some categorical variable:
+
+```{r}
+ggplot(data=starwars) +
+  geom_point(aes(x=height,y=mass)) +
+  geom_smooth(mapping = aes(x=height,y=mass),method = 'lm') +
+  facet_wrap(~ factor(gender),ncol = 5)
+```
+
+So, let's now continue the exploration of the ggplot2 library. We already saw how to split a plot according to one categorical variable:
+
+```{r}
+ggplot(data=mpg) +
+  geom_point(aes(x=displ,y=hwy)) +
+  geom_smooth(mapping = aes(x=displ,y=hwy),method = 'lm') +
+  facet_wrap(~ trans,ncol = 5)
+```
+
+It is fact also possible to split the data to plot according to two categorical variables:
+
+```{r}
+ggplot(data=mpg) +
+  geom_point(aes(x=displ,y=hwy)) +
+  facet_wrap(cyl ~ drv)
+```
+
+
+```{r}
+ggplot(data=mpg) +
+  geom_point(aes(x=displ,y=hwy,col=factor(cyl),shape=drv)) +
+  facet_grid(cyl ~ drv)
+```
+
+For instance, the bottom right panel plots the consumption on highways (`hwy`) againts the displacment of the engine (`displ`) only for the cars that have 4-wheel-drive for the variable `drv` and 8 cylenders (`cyl`).
+
+```{r}
+ggplot(data=mpg) +
+  geom_point(aes(x=displ,y=hwy,col=factor(cyl),shape=drv))
+```
+
+> Exercise: produce a grid of plots displaying the hwy vs disp according to the year of manufacture and the type of transmission.
+
+```{r}
+ggplot(data=mpg) +
+  geom_point(aes(x=displ,y=hwy,col=factor(year),shape=trans)) +
+  facet_grid(year ~ trans)
+```
+
+It is also possible to produce conditional barplots according to one or two categorical variables:
+
+```{r}
+ggplot(data=mpg) +
+  geom_bar(aes(x=factor(cyl),fill=factor(drv)))
+```
+
+Here, the firts column considers only cars that have 4 cylenders (~82 cars) and among those cars, ~58 have a front wheel drive train and the rest are cars with 4wd train.
+
+```{r}
+ggplot(data=mpg) +
+  geom_bar(aes(x=factor(drv),fill=factor(cyl)))
+```
+
+This plot displays the information than the previous one but with a different point of view.
+
+```{r}
+ggplot(data=mpg) +
+  geom_bar(aes(x=factor(drv),fill=factor(cyl)), position="dodge")
+```
+
+It is also possible to produce pie charts in a similar way:
+
+```{r}
+ggplot(data=mpg) +
+  geom_bar(aes(x='',fill=factor(cyl))) +
+  coord_polar(theta='y') +
+  facet_wrap(~factor(drv))
+```
+
+And finally, wa can also produce boxplots according to some categorical variable:
+
+```{r}
+ggplot(data=mpg) +
+  geom_boxplot(aes(x=factor(cyl),y=hwy,fill=factor(cyl))) +
+  facet_wrap(~factor(drv))
+```
+
+This kind of plot is frquently used in data science, scientific litterature because it allows to compare the effect of some features (a drug for instance) to some variable (eg. the number of deaths) on different populations (here the columns).
+
+> Exercise: let's consider the swiss data set and use some of the above commands to visualize the different features according to the majority religion of the cities.
+
+```{r}
+data(swiss)
+pairs(swiss)
+swiss$Religion = (swiss$Catholic > 50) + 0
+swiss$Religion[swiss$Religion == 0] = 'Protestant'
+swiss$Religion[swiss$Religion == 1] = 'Catholic'
+
+ggplot(data=swiss)+
+  geom_boxplot(aes(x='',y=Education)) +
+  facet_wrap(~Religion)
+
+ggplot(data=swiss)+
+  geom_boxplot(aes(x='',y=Examination)) +
+  facet_wrap(~Religion)
+
+ggplot(data=swiss)+
+  geom_boxplot(aes(x='',y=Fertility)) +
+  facet_wrap(~Religion)
+
+ggplot(data=swiss)+
+  geom_boxplot(aes(x='',y=Infant.Mortality)) +
+  facet_wrap(~Religion)
+
+ggplot(data=swiss)+
+  geom_boxplot(aes(x='',y=Agriculture)) +
+  facet_wrap(~Religion)
+```
+
+It also possible to look at two continuous variables according to one categorical variable:
+
+
+```{r}
+ggplot(data=swiss)+
+  geom_point(aes(x=Education,y=Agriculture)) +
+  geom_smooth(aes(x=Education,y=Agriculture),method = 'lm') +
+  facet_wrap(~Religion)
+```
+
+On this plot, the most interesting thing is the slope of the blue lines, which indicate that the relationship between Agriculture and Education is almost the same in the two populations. 
+
+
+```{r}
+ggplot(data=swiss)+
+  geom_point(aes(x=Education,y=Examination)) +
+  geom_smooth(aes(x=Education,y=Examination),method = 'lm') +
+  facet_wrap(~Religion)
+```
+
+# Programming with R
+
+R is of course a good software to make calculations and to produce plots, but it can also be used as a programming language, which is great if you would like to produce advanced analyses.
+
+## Basics of R programming
+
+Among the basics, we have of course the different loops and tests:
+
+- the `for` loop:
+
+```{r eval=FALSE}
+for (index in list_of_elements){
+  commands to execute
+  ...
+}
+```
+
+An example:
+
+```{r}
+for (i in 1:10){
+  print(i+1)
+}
+```
+
+Another one:
+
+```{r}
+myvector = c(1,3,-2,5,7)
+for (i in myvector){
+  print(i+1)
+}
+```
+
+> Remark: the `{}` are mandatory if we have more that one command to execute. It is possible not to put them but the single command should be on the same line.
+
+```{r}
+myvector = c(1,3,-2,5,7)
+for (i in myvector) print(i+1)
+```
+
+- the `while` loop:
+
+```{r eval=FALSE}
+while (condition){
+  some command
+  ...
+  update of the condition
+}
+```
+
+An example:
+
+```{r}
+k = 0
+test = TRUE
+while (test){
+  print(k)
+  k=k+1
+  test = k<10
+}
+```
+
+- the `switch` operator is also available in R (even though its form is not very convenient!):
+
+```{r eval=FALSE}
+switch(exp,
+       case1=action1,
+       case2=action2,
+       ...)
+```
+
+A practical example:
+
+```{r}
+exp = 'sin'
+switch(exp,
+       sin=plot(1:100,sin(1:100),type='l',col='red'),
+       cos=plot(1:100,cos(1:100),type='l',col='blue'))
+```
+
+- the `if` operator:
+
+```{r eval=FALSE}
+if (condition){
+  some commands
+  ...
+} else {
+  some other commands
+  ...
+}
+```
+
+In practice:
+
+```{r}
+exp = 'cos'
+if (exp == 'sin'){
+  plot(1:100,sin(1:100),type='l',col='red')
+} else {
+  plot(1:100,cos(1:100),type='l',col='blue')
+}
+```
+
+Another example:
+
+```{r}
+test = TRUE
+if (test){
+  print('The test is TRUE')
+}
+```
+
+## Defining functions
+
+In situations where you need to use frequently the same part of code, you should create a function. Any user can define a new function in its working environnement. The format to define a function is as follows:
+
+```{r eval=FALSE}
+name_of_the_function <- function(in_par1, in_par2, ...){
+  a first line of codetools
+  a second line of code
+  ...
+  the_object_to_return # or return(the_object_to_return)
+}
+```
+
+The element on the last line of the function will be returned to the user. Notice that it is not mandatory to return somethng if the function aims to print or plot something.
+
+
+Here is an example of a first function:
+
+```{r}
+mysum <- function(a,b){
+  s = a + b
+  cat('The sum is equal to',s,'\n')
+  s # or return(s)
+}
+```
+
+After evaluating this definition, the new function `mysum` is available in the environnement. It is then possible to directly use it:
+
+```{r}
+res = mysum(2,3)
+res
+```
+
+> Notice that the local variable `s`, `a` and `b` are not visible outside the function.
+
+Be careful, the global variable that you defined in the environnement are visible inside the functions:
+
+```{r}
+Sum = 10
+mysum2 <- function(a,b){
+  s = a + b
+  cat('The sum is equal to',s,'\n')
+  Sum # Let's suppose we made a mistake here and use the global var. Sum instead of s
+}
+mysum2(2,3)
+```
+
+> Exercise: Create a new function, called `myhist` that plot an histogram with the blue bars and, eventually, superimpose a red curve for the density estimation if some option is activated.
+
+```{r}
+myhist <- function(x,col='lightblue',density=TRUE){
+  hist(x,col=col,freq=FALSE)
+  if (density) lines(density(x),col='red',lty=2,lwd=2)
+}
+data = rnorm(1000)
+myhist(data)
+
+myhist(data,col='pink',density=FALSE)
+
+myhist(col='purple',x=data)
+```
+
+In the above example, some elements need to be discussed:
+
+- when defining a function, it is possible to provide default values for some parameters using the `=` operator. Then, when calling this function, if the user does not provide those parameters, the default values will be used.
+
+- R is totally able to differantiate the `col` variable of the function you define and any other `col` parameter of a function that you may use inside the function.
+
+> Remark: The functions defined during a session are visible until the next restart of R.
+
+> Remark: if you create a function with the same name as an R function, the new function will overwrite the R function until the next restart.
+
+```{r}
+a = 1:10
+mean(a)
+
+mean <- function(x){
+  sin(x)
+}
+
+mean(a)
+```
+
+In R, there is also a very (very very very) convenient operator which is the `...` operator. This operator allows to pass any kind of input parameter to a function that will be used in the subfunctions of the function.
+
+```{r}
+myhist <- function(x,col='lightblue',density=TRUE,...){
+  hist(x,col=col,freq=FALSE,...)
+  if (density) lines(density(x,...),col='red',lty=2,lwd=2,...)
+}
+
+data = rnorm(1000)
+myhist(data,breaks=100,kernel = 'triangular')
+```
+
+
+## The apply functions
+
+When working with large data tables and if we want to replicate the same action on each element of the table, the use of a `for` loop is not the most efficient. Indeed, the `apply` function family is designed for that.
+
+The basic use is as follows for computing the mean of each column a large matrix:
+
+```{r}
+X = matrix(rnorm(50000),nrow = 500)
+
+# Classical way
+colmean = rep(NA,ncol(X))
+for (i in 1:ncol(X)) colmean[i] = mean(X[,i])
+
+# The apply way
+colmean2 = apply(X,2,mean) 
+```
+
+The `2` in the call `apply(X,2,mean)` indicates that we want to work along the columns (it would be `1` for rows).
+
+> Exercise: compute the standard deviation of each row of the matrix X.
+
+```{r}
+out = apply(X,1,sd)
+```
+
+This can be extended to a lot of functions:
+
+```{r}
+out = apply(X,1,max)
+
+out = apply(X,2,min)
+```
+
+and even if the function is not existing, you can create it inside the call (the call below counts for each column of `X` how many elements are positive):
+
+```{r}
+apply(X,2,function(x){sum(x>=0)})
+
+f <- function(x,mu){sum(x>=mu)}
+apply(X,2,f,mu=1)
+```
+
+The `apply` function is devoted to matrices, data frames and arrays. For lists, the `lapply` is the function to use. The `sapply` is the one for vectors.
+
+```{r}
+L = list(c(1,2,3,4,5),1:100,rep(0,30))
+L
+
+lapply(L,mean)
+```
+
+The replicate function allows to replicate several time the same call. It is of course only useful for calls that do not produce the same result everytime.
+
+```{r}
+replicate(5,rnorm(8))
+```
+
+## Building R packages
+
+The best way to share a set of functions is to create an R package, that can be directly loaded by any R user and even uploaded on the CRAN server if you fulfill all the CRAN policies. In the latter situation, your package will be available for evryone in R thanks to the `install.packages` command.
+
+## Installing packages
+
+The `install.packages` command is the one to used to install a package from the CRAN server or your disk:
+
+```{r eval=FALSE}
+# Installation from the CRAN server
+install.packages('HDclassif')
+
+# Installation from the local disk
+install.packages('Laboratoire/Rpackages/HDclassif/HDclassif_2.0.2.tar.gz',repos=NULL)
+```
+
+All dependencies of the target package will be also installed automatically.
+
+## Creating a package
+
+The process to creat a package is as follows:
+
+- clean your environnement,
+- load the functions and data sets you would like to add to you package,
+- use the `package.skeleton` fucntion to create the source of the package.
+
+```{r eval=FALSE}
+rm(list=ls())
+
+x = rnorm(1000)
+
+myhist <- function(x,col='lightblue',density=TRUE,...){
+  hist(x,col=col,freq=FALSE,...)
+  if (density) lines(density(x,...),col='red',lty=2,lwd=2,...)
+}
+
+package.skeleton('MyPackage')
+```
+
+# The Shiny applications
+
+The `shiny` package for R offers the possibility to create interactive websites (using javascript) incorporating data science elements thanks to R, in dynamic manner. This package is also a way to use R for people who don't know R at all. It is like a "software" based on your code.
+
+```{r eval=FALSE}
+#install.packages('shiny')
+library(shiny)
+```
+
+To have a first overview of the package, we can test the `01_hello` shiny code which is provided:
+
+```{r eval=FALSE}
+library(shiny)
+runExample("01_hello")
+```
+
+In order to create a shiny page, you will have to create two files in a directory:
+
+- `ui.R` is devoted to describe the user interface,
+- `server.R` is the file describing the R caode to run depending on the user actions.
+
+It also possible now to gether the two elements in a single `app.R` file.
+
+To learn how to fill those two pages, I propose that we follow the tutorial avaible at https://shiny.rstudio.com/tutorial/written-tutorial/lesson1/
+
+> Exercise: starting with the histogram shiny example, modify it to use the `myhist` function instead of the `hist` function.
+
+
+> Exercise: Modify the `app.R` in order to use the `myhist` function with all its options (colors of the bars and display of the density estimation).
+
+> Exercise: create a Shiny app that allows to explore the swiss data according to the religion of the cities, and using ggplot.
+
+
+
+
+
+
+
+
+
+
+

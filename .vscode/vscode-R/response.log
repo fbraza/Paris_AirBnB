@@ -1,0 +1,16 @@
+{"time":"2020-05-07 22:53:56","pid":141036,"command":"attach","tempdir":"/tmp/RtmpnjwsOG"} 
+{"time":"2020-05-09 02:22:57","pid":9533,"command":"attach","tempdir":"/tmp/Rtmpdk22C4"} 
+{"time":"2020-05-09 02:24:22","pid":9899,"command":"attach","tempdir":"/tmp/RtmpIYbW5H"} 
+{"time":"2020-05-09 02:24:25","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/doc/html/Search?objects=1&port=10335"} 
+{"time":"2020-05-09 02:24:25","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/library/stats/html/t.test.html"} 
+{"time":"2020-05-09 02:24:25","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/doc/html/Search?objects=1&port=10335"} 
+{"time":"2020-05-09 02:24:25","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/library/base/html/t.html"} 
+{"time":"2020-05-09 02:24:55","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/doc/html/Search?objects=1&port=10335"} 
+{"time":"2020-05-09 02:24:55","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/library/stats/html/t.test.html"} 
+{"time":"2020-05-09 02:24:55","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/doc/html/Search?objects=1&port=10335"} 
+{"time":"2020-05-09 02:24:55","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/library/base/html/t.html"} 
+{"time":"2020-05-09 02:25:39","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/doc/html/Search?objects=1&port=10335"} 
+{"time":"2020-05-09 02:25:39","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/library/stats/html/t.test.html"} 
+{"time":"2020-05-09 02:25:39","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/doc/html/Search?objects=1&port=10335"} 
+{"time":"2020-05-09 02:25:39","pid":9899,"command":"browser","url":"http://127.0.0.1:10335/library/base/html/t.html"} 
+{"time":"2020-05-12 08:35:29","pid":5824,"command":"attach","tempdir":"/tmp/RtmpMvdjuz"} 

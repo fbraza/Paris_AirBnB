@@ -1,0 +1,515 @@
+---
+title: "R4BD - Day 2"
+author: "Pr. Charles BOUVEYRON"
+date: "4/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Scientific reporting with R
+
+Rstudio is providing a nice way to work with R and to keep a nice report on the done experiments thanks to the *Rmarkdown* system. To create such a file, you only have to create Rmd file.
+
+The goal of an Rmd file, is to produce a fixed report that can be printed and shared with colleagues or responsible persons. The alternative in R is to start a notebook which is a more interactive document which is not designed to be shared.
+
+First, it is important to know that Rmarkdown is just a port of the Markdown language to the Rstudio world. Most of the commands of Rmd are in fact Markdown commands. The aim of Markdown is to create a document (reports, books, theses, ...) by focusing on the content and not on the form / presentation. 
+
+For instance, in Markdown, there is no need to think about the place and the font size of the title, you just have to tell to the system that it is a title. Another example, the `#` is used to identify in the text the section titles.
+
+Once you started a Rmd document: `File > New file > Rmarkdown document`. Then, you'll have to choose the type of document you want to produce (html, PDF or Word). For PDF, you'll need to have LaTeX installed and Microsoft Word for Word.
+
+## The basic RMD commands
+
+In order to write a nice document, you'll need to learn a few commands. There is a nice cheatsheet that is available on Rstudio. Among the most useful commands, we have:
+
+- the use of `#` to struture the document:
+  + `#` will denote a Section title,
+  + `##` will correspond to a subsection title,
+  + `###`  will denote a subsubsection title.
+- the `*text*` (*text*) and `**text**` (**text**) commands allow to highlight some texts,
+- it also possible to mix both commands: `***text***` -> ***text***.
+- the command `_text_` (_text_) allows to underline a word,
+- and the command `>` will create a block in the document to highlight some note or remark.
+
+> Example of a remark: for this we used the `>` sign.
+
+It is also possible to import images inside the document. The command `![alternative text](path/to/the/image.png)` allows this.
+
+![This is the logo of the DSTI institute.](Logo-DSTI.png)
+
+The command `***` will create a horizontal line:
+
+***
+
+It is also possible to create nice tables within Rmd. The format is as follows:
+
+|Method|1st case|2nd case|
+|---|---|---|
+|Lasso|0.9|0.78|
+|Enet|0.95|0.84|
+
+## Writing Mathematics in Rmarkdown
+
+A very good element of Rmarkdown is the ability to use the $\LaTeX$ language to write mathematical equations within your document. This is an example of a online formnula: $f(\alpha)=2\exp(\beta)+\sin(2x)$ and this a outline formula:
+$$f(x;\theta)=\sum_{k=1}^K \pi_k \phi(x;\theta_k).$$
+
+This feature is really a plus for scientific reports or papers that can be now written in a single software instead of separating the theory from the experiments.
+
+## Incorporating parts of code 
+
+The main interest of Rmarkdown is of course the ability to incorporate parts of code within the document and to display the results. To do so, you'll have to add a code chunk, which may be in R, Python, bash, C++, SQL, D3 or Stan.
+
+```{r}
+x = 1:100
+x
+plot(x,sin(x),type='b')
+```
+
+```{bash}
+ls
+du -sh
+```
+
+For Python (for Python 3, you should put ````{python3}`):
+
+```{python}
+x=4
+print(x)
+```
+
+In the code chuncks, you just have to write the code and of course the variables that are created in one chunck will remain available in the following chuncks. You can also custamize the display of the code and results within the chunck options:
+
+- dy default, the execution of the code will print the code and all results (texts and images)
+- the option `echo=FALSE` will run the code and only display the results,
+- the option `eval=FALSE` will display the code and not run the code,
+- the option `include=FALSE` will print the code, run the code but not display the result. In this case, the code is run silently and nothing is displayed, but the result is saved in memory and can be used later.
+
+## Create books with Rmardown
+
+In fact, it is possible afterward to compile a book with Rmarkdown when you have a long and well strutured document. The `bookdown` package is devoted to this. Please refer to http://bookdown.org.
+
+# The R graphical system
+
+As I said, the R graphical system is mainly organized around the plot function, which is a generic function that can be enriched to add extra capacities depending on the context.
+
+## Basic plots and legends
+
+The basic plot funtion offer a lot a ways to create nige graphics:
+
+```{r}
+x = seq(-pi,pi,length.out = 100)
+y = sin(x)
+plot(x,y)
+```
+
+As we can see, R is plotting by default the data points. It is possible to change the style of the plot thanks to the `type='l'` (lines) or `type='b'` (points and lines).
+
+```{r}
+plot(x,y,type='l')
+```
+
+> Remark: R has different types for plotting: 'p' for points, 'l' for lines, 'b' for points + lines, 'h' for bars and 'n' for nothing. 
+
+The `type='n'` option may be surprising but is in fact quite useful when doing advanced plots. It is in particular useful to set the margin of your plot before plotting complex data. 
+
+```{r}
+plot(x,y,type='n')
+```
+
+This produces a blank plot but the x and y axes have the correct range for the data.
+
+The plot function is the first element of a Lego-like graphical system since the plot function create the figure on which it is possible to add elements:
+
+```{r}
+plot(x,y,type='h',col='lavender')
+title(main='My nice figure')
+title(sub='This is my subtitle')
+```
+
+It is for instance really possible to add additional points or lines on a already created plot:
+
+```{r}
+plot(x,y,type='h',col='lavender')
+title(main='My nice figure')
+title(sub='This is my subtitle')
+
+lines(x,y,col='red')
+```
+
+> Remark: on this example, we have to use the `lines` function instead of `plot` because `plot` would have started anothe figure and not add the line on the existing figure.
+
+The functions `lines` and `points` allow to add lines or points on an existing figure.
+
+```{r}
+z = cos(x)
+plot(x,y,type='l',col='red')
+lines(x,z,type='l',col='blue')
+```
+
+```{r}
+z = cos(x) + 1
+plot(x,y,type='l',col='red')
+lines(x,z,type='l',col='blue')
+```
+
+```{r}
+plot(c(x,x),c(y,z),type='n')
+lines(x,y,type='l',col='red')
+lines(x,z,type='l',col='blue')
+```
+
+In R, it is easy to modify the axis labels and add a legend. The `legend` function allows to custamize an appropriate legend for the plot:
+
+```{r}
+plot(c(x,x),c(y,z),type='n',xlab = 'The x axis',ylab = 'The y axis')
+lines(x,y,type='l',col='red')
+lines(x,z,type='l',col='blue',lty=2)
+
+#legend(1.5,-0.25,legend = c('sin(x)','cos(x)+1'),
+#      col=c('red','blue'),lty=c(1,2))
+
+legend('bottomright',legend = c('sin(x)','cos(x)+1'),
+      col=c('red','blue'),lty=c(1,2))
+```
+
+Then, it is also frequent to have to display some text or labels on a plot. The `text` function can be used for this.
+
+```{r}
+data(iris)
+plot(iris[,1:2],pch=19,col=as.numeric(iris$Species))
+#text(iris[,1:2],labels = rownames(iris),pos=1,cex=0.7)
+text(iris[,1:2],labels = iris$Species,pos=1,cex=0.7,col=as.numeric(iris$Species))
+```
+
+The `abline` function aims at adding on a plot some line to highlight some phenomenon or separate the plot in parts, ...
+
+```{r}
+data(iris)
+plot(iris[,1:2],pch=19,col=as.numeric(iris$Species))
+text(iris[,1:2],labels = iris$Species,pos=1,cex=0.7,col=as.numeric(iris$Species))
+
+abline(a=-2.3,b = 1,lty=1,lwd=2,col='red')
+```
+
+
+The `abline` function is in particular very useful to display the regression line for some data:
+
+```{r}
+x  = runif(100)
+y = 2*x + 0.2 + rnorm(100,sd=0.2)
+plot(x,y)
+
+abline(a = 0.2, b = 2, lty=2, col='red', lwd=2)
+# a represents the intercept when x=0
+# b represents the slope of the line
+
+abline(h=2,col='green')
+abline(v=0.5,col='blue')
+```
+
+The `mtext` function allows to add some text on the margins:
+
+```{r}
+x  = runif(100)
+y = 2*x + 0.2 + rnorm(100,sd=0.2)
+plot(x,y)
+
+mtext('My wonderful text',side=4)
+```
+
+> Exercise: simulate two sets, x and y, of data with normal and uniform distributions. Plot the two-dimensional data (x,y) and display in red the points that fall into the quarter [0.5,1] x [0.5,1]. The rest of the data have to be in blue. Use some lines to highlight the limit of the quarter. 
+
+```{r}
+x = rnorm(1000); y = runif(1000)
+plot(x,y,type='n')
+sel = which((x>=0.5 & x<=1) & (y>=0.5 & y<=1))
+points(x[sel],y[sel],col='red')
+points(x[-sel],y[-sel],col='blue')
+
+abline(h=0.5,lty=2,col='red')
+abline(h=1,lty=2,col='red')
+abline(v=0.5,lty=2,col='red')
+abline(v=1,lty=2,col='red')
+```
+
+## Basic statistical plots with R
+
+The first graphical statistical tool that you may be interested to plot is the histogram. The histogram aims at visualizing the distribution of continous data. In R, the `hist` function allows to do it:
+
+```{r}
+x = rnorm(100)
+hist(x)
+```
+
+> Warning: building a histogram is really a sensitive task because choosing the form and the number of slices is difficult.
+
+In order to illustrate this, we can do the following experiment:
+
+```{r}
+x = runif(1000)
+par(mfrow=c(1,3)) # This splits the plot into 1 row and 3 columns
+hist(x,breaks = 2)
+hist(x)
+hist(x, breaks = 80)
+```
+
+In R, three automatic methods are proposed to select the appropriate number of breaks:
+
+```{r}
+x = runif(1000)
+par(mfrow=c(1,3)) # This splits the plot into 1 row and 3 columns
+hist(x,breaks = "Sturges", main="Sturges")
+hist(x, breaks = "Scott", main="Scott")
+hist(x, breaks = "FD", main="FD")
+```
+
+It is also possible to custamize a histogram:
+
+```{r}
+hist(x,col="lavender",main='My histogram')
+```
+
+I usually recommend to add to the histogram an estimation of the probility distribution function, that can be estimated with the `density` function:
+
+```{r}
+x = rnorm(100)
+hist(x,col='lightblue',freq = FALSE)
+lines(density(x),lty=2,col='red',lwd=2)
+```
+
+The alternative to the histogram is the boxplot. The `boxplot` function works as follows:
+
+```{r}
+x = rnorm(100)
+par(mfrow=c(1,2))
+
+hist(x,col='lightblue',freq = FALSE)
+lines(density(x),lty=2,col='red',lwd=2)
+
+boxplot(x,col='lightblue')
+```
+
+In a boxplot, the middle bar of the box is the media, i.e. the value that seperates the data into two equal parts. 
+
+```{r}
+par(mfrow=c(2,2))
+
+x = rnorm(100)
+hist(x,col='lightblue',freq = FALSE)
+lines(density(x),lty=2,col='red',lwd=2)
+boxplot(x,col='lightblue')
+
+y = rgamma(100,shape=0.5)
+hist(y,col='lightblue',freq = FALSE)
+lines(density(y),lty=2,col='red',lwd=2)
+boxplot(y,col='lightblue')
+```
+
+Compared to the histogram, the boxplot presents the advantadge to have no parameter to tune and a very concise representation of the data distribution.
+
+When you are deling with multivariate data, it is also possible to display the different boxplot close to each others.
+
+```{r}
+data(iris)
+boxplot(iris[,-5])
+```
+
+In term of multidimensional representation, the pairs-plot is also useful in many cases (usually between 2 and 15 variables). The `pairs` function works as follows:
+
+```{r}
+data(iris)
+pairs(iris[,-5])
+```
+
+In this case, we also have access to the type of the flowers we have in the data and the type can be represented on the pairs-polt thanks to the color:
+
+```{r}
+pairs(iris[,-5],col=as.numeric(iris[,5]))
+```
+
+It is worth noticing that this figures plots 5 variables: 4 continous ones and 1 categorical one.
+
+> Exercise: do a complete analysis of the swiss data set with the different tools that we saw in this section.
+
+```{r}
+data(swiss)
+pairs(swiss,pch=19)
+
+boxplot(swiss)
+
+par(mfrow=c(2,3))
+hist(swiss[,1],col='lightblue')
+hist(swiss[,2],col='lightblue')
+hist(swiss[,3],col='lightblue')
+hist(swiss[,4],col='lightblue')
+hist(swiss[,5],col='lightblue')
+hist(swiss[,6],col='lightblue')
+```
+
+For categorical variables, we can either draw barplots or piecharts:
+
+- `barplot`:
+
+```{r}
+data(iris)
+f = table(iris$Species)
+f
+
+barplot(f)
+```
+
+- `pie`:
+
+```{r}
+data(iris)
+f = table(iris$Species)
+pie(f)
+```
+
+> Remark: the `summary` function may be also useful to summarize a data set with many variables
+
+```{r}
+data(swiss)
+summary(swiss)
+```
+
+## The ggplot library
+
+The `ggplot2` package is an extr R package that is available on the CRAN server. It is quite popular and it helps in producing nice visualizations quickly. 
+
+To install and load the package, you'll have to type:
+
+- `install.packages('ggplot2')` (to be done only the first time),
+- `library(ggplot2)`.
+
+Once the library is loaded, all ggplot functions are available in the working environnment. In order to illustrate the ggplot package, I propose that we work with a famous data set: the `mpg` data.
+
+```{r}
+library(ggplot2)
+data(mpg)
+mpg
+```
+
+A first try of ggplot on this data:
+
+```{r}
+ggplot(data = mpg) + geom_histogram(aes(x = hwy))
+```
+
+It is interesting to compare the ggplot and R histograms:
+
+```{r}
+ggplot(data = mpg) + geom_histogram(aes(x = hwy))
+hist(mpg$hwy,col='lightblue')
+```
+
+> Warning: in ggplot, the histogram always works with 30 slices! It may be useful to change by hand this value depending on the data.
+
+```{r}
+ggplot(data = mpg) + geom_histogram(aes(x = hwy),
+                                    bins = 15,
+                                    fill = 'pink')
+
+```
+
+At this point, we can analyse the way ggplot works:
+
+- `ggplot(data = mpg)`: the first command is to call ggplot and define the data we are working with,
+- `+`: this operator allows to add a graphical layer on the plot,
+- `geom_xxxxx`: some graphical ggplot operator that will operates on some variables of the data.
+
+It is of course possible to add another graphical layer using the `+` operator.
+
+> Exercise: recreate in ggplot the "histogram + density" plot that we did in basic R before and apply it on the variable `hwy` of the `mpg` data set.
+
+```{r}
+ggplot(data = mpg) + geom_histogram(aes(x = hwy,y=..density..),
+                                    bins = 15,
+                                    fill = 'pink') +
+  geom_density(aes(x = hwy),col='blue')
+```
+
+Of course, all graphical tools are also present in ggplot, such as the boxplot:
+
+```{r}
+ggplot(data = mpg) + geom_boxplot(aes(x='',y=hwy),fill='lightblue')
+```
+
+For categorical variables, it is also possible to draw barplots and pie charts:
+
+```{r}
+ggplot(data = mpg) + geom_bar(aes(x=factor(trans)),fill='lightblue')
+```
+
+And, the ggplot package offers nice extensions for categorical variables: the cumulative barplot for instance.
+
+```{r}
+ggplot(data = mpg) + geom_bar(aes(x='',fill=factor(trans)))
+```
+
+For the pie chart, we have to do this:
+```{r}
+ggplot(data = mpg) + 
+  geom_bar(aes(x='',fill=factor(trans))) +
+  coord_polar(theta = 'y')
+```
+
+It also possible to draw scatter plots for multivariate continous data:
+
+```{r}
+ggplot(data = mpg) + geom_point(aes(x=displ,y=hwy))
+```
+
+We see here a clear (negative) correlation between the engine displacement and the number of miles per gallon on the highway. It is however less clear for `displ > 4`.
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x=displ,y=hwy)) +
+  geom_smooth(mapping = aes(x=displ,y=hwy),fill='pink',col='green')
+```
+
+With ggplot, it also possible to play with the colors to add to such a plot one categorical variable:
+
+```{r}
+ggplot(data = mpg) +  geom_point(aes(x=displ,y=hwy,col=factor(year)))
+```
+
+> Exercise: Check if the type of transmission has an effect on the gas consumption.
+
+```{r}
+ggplot(data = mpg) +  geom_point(aes(x=displ,y=hwy,col=trans))
+```
+
+Clearly, this plot is very hard to read unfortunately. Hopefully, we have a nice option in ggplot that allows to split the plot in different conditional subplots:
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x=displ,y=hwy,col=trans)) +
+ facet_wrap(~ trans,nrow=2)
+```
+
+Just for fun, here is the code to produce the same type of plot with basic R:
+
+```{r}
+par(mfrow=c(2,5))
+trans = as.factor(mpg$trans)
+for (i in 1:length(unique(trans))){
+  sel = which(as.numeric(trans)==i)
+  plot(mpg$displ,mpg$hwy,type='n')
+  points(mpg$displ[sel],mpg$hwy[sel], pch=19, col=i)
+}
+```
+
+
+> Exercise: We will use a data set named `starwars` in the `dplyr` package to answer the following questions:
+
+- install the package and load the data into your environnment, 
+- list the names of the human characters,
+- list the different worlds,
+- display on a plot the number of characters of each type in decreasing order,
+- visulize the relationship between the height and weight of the different characters.
+
+
